@@ -1,4 +1,4 @@
-/* $Id: connection.h 36 2005-07-22 09:26:47Z matled $ {{{
+/* $Id$ {{{
    vim:sw=4:sts=4:et:
    Copyright (C) 2005 Matthias Lederhofer <matled@gmx.net>
 
@@ -23,13 +23,6 @@
 #include "config.h"
 #include "buffer.h"
 
-#define STATE_Cs (1<<0)
-#define STATE_cS (1<<1)
-#define STATE_Sc (1<<2)
-#define STATE_sC (1<<3)
-#define STATE_CS (STATE_Cs | STATE_cS)
-#define STATE_SC (STATE_Sc | STATE_sC)
-
 struct connection_t {
     struct connection_t *next;
     
@@ -38,8 +31,6 @@ struct connection_t {
 
     int socks;
     struct buffer sc_buf;
-
-    unsigned int state : 4;
 };
 
 struct connection_t *connection_alloc(void);

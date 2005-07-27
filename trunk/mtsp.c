@@ -217,8 +217,6 @@ void process_pending(fd_set *rfds, fd_set *wfds)
                     "connection to socks server established", NULL);
                 buf_init(&i->sc_buf);
 
-                i->state = STATE_CS | STATE_SC;
-
                 tmp = i;
                 i = i->next;
                 connection_remove(&global.pending, tmp);
@@ -241,12 +239,8 @@ void process_connections(fd_set *rfds, fd_set *wfds)
     while (i != NULL) {
         /* CLIENT->socks */
         if (FD_ISSET(i->client, rfds)) {
-            assert(i->state & STATE_CS);
             assert(BUF_READ(i->cs_buf));
             n = buf_read(i->client, &i->cs_buf, 0);
-            if (n <= 0) {
-                i->state &= ~STATE_Cs;
-            }
 #ifdef DEBUG /* {{{ */
             if (n == 0) {
                 logc_debug(i->client, "read from client failed", NULL);
@@ -257,16 +251,19 @@ void process_connections(fd_set *rfds, fd_set *wfds)
                 logc_debug(i->client, "Cs ", itoa(n), " bytes", NULL);
             }
 #endif /* }}} */
+            if (n <= 0) {
+                logc_notice(i->client, "DROPPING connection", NULL);
+                tmp = i;
+                i = i->next;
+                connection_destroy(&global.connections, tmp);
+                continue;
+            }
         }
 
         /* SOCKS->client */
         if (FD_ISSET(i->socks, rfds)) {
-            assert(i->state & STATE_SC);
             assert(BUF_READ(i->sc_buf));
             n = buf_read(i->socks, &i->sc_buf, 0);
-            if (n <= 0) {
-                i->state &= ~STATE_Sc;
-            }
 #ifdef DEBUG /* {{{ */
             if (n == 0) {
                 logc_debug(i->client, "read from socks failed", NULL);
@@ -277,19 +274,19 @@ void process_connections(fd_set *rfds, fd_set *wfds)
                 logc_debug(i->client, "Sc ", itoa(n) ," bytes", NULL);
             }
 #endif /* }}} */
+            if (n <= 0) {
+                logc_notice(i->client, "DROPPING connection", NULL);
+                tmp = i;
+                i = i->next;
+                connection_destroy(&global.connections, tmp);
+                continue;
+            }
         }
 
         /* client->SOCKS */
         if (FD_ISSET(i->socks, wfds)) {
-            assert(i->state & STATE_cS);
             assert(BUF_WRITE(i->cs_buf));
             n = buf_write(i->socks, &i->cs_buf, 0);
-            if (n <= 0) {
-                i->state &= ~STATE_CS;
-                shutdown(i->client, SHUT_RD);
-                shutdown(i->client, SHUT_WR);
-                buf_init(&i->cs_buf);
-            }
 #ifdef DEBUG /* {{{ */
             if (n == 0) {
                 logc_debug(i->client, "write to socks failed", NULL);
@@ -299,21 +296,19 @@ void process_connections(fd_set *rfds, fd_set *wfds)
                 logc_debug(i->client, "cS ", itoa(n), " bytes", NULL);
             }
 #endif /* }}} */
+            if (n <= 0) {
+                logc_notice(i->client, "DROPPING connection", NULL);
+                tmp = i;
+                i = i->next;
+                connection_destroy(&global.connections, tmp);
+                continue;
+            }
         }
 
         /* socks->CLIENT */
         if (FD_ISSET(i->client, wfds)) {
-            assert(i->state & STATE_sC);
             assert(BUF_WRITE(i->sc_buf));
             n = buf_write(i->client, &i->sc_buf, 0);
-            if (n <= 0) {
-                if (i->state & STATE_Sc) {
-                    shutdown(i->socks, SHUT_RD);
-                }
-                shutdown(i->socks, SHUT_WR);
-                i->state &= ~STATE_SC;
-                buf_init(&i->sc_buf);
-            }
 #ifdef DEBUG /* {{{ */
             if (n == 0) {
                 logc_debug(i->client, "write to client failed", NULL);
@@ -324,28 +319,13 @@ void process_connections(fd_set *rfds, fd_set *wfds)
                 logc_debug(i->client, "sC ", itoa(n), " bytes", NULL);
             }
 #endif /* }}} */
-        }
-
-        /* no new data will be read and buffer is empty but STATE_cS is still
-         * set => disable STATE_cS and shutdown socks connection for writing
-         */
-        if ((i->state & STATE_CS) == STATE_cS && !BUF_WRITE(i->cs_buf))
-        {
-            i->state &= ~STATE_cS;
-            shutdown(i->socks, SHUT_WR);
-        }
-        if ((i->state & STATE_SC) == STATE_sC && !BUF_WRITE(i->sc_buf))
-        {
-            i->state &= ~STATE_sC;
-            shutdown(i->client, SHUT_WR);
-        }
-
-        if (!(i->state & (STATE_CS | STATE_SC))) {
-            logc_notice(i->client, "DROPPING connection", NULL);
-            tmp = i;
-            i = i->next;
-            connection_destroy(&global.connections, tmp);
-            continue;
+            if (n <= 0) {
+                logc_notice(i->client, "DROPPING connection", NULL);
+                tmp = i;
+                i = i->next;
+                connection_destroy(&global.connections, tmp);
+                continue;
+            }
         }
 
         i = i->next;
@@ -356,10 +336,10 @@ void fill_fdset(fd_set *rfds, fd_set *wfds, int *maxfd)
 /* {{{ */ {
     struct connection_t *i;
     for (i = global.connections; i != NULL; i = i->next) {
-        if ((i->state & STATE_CS) && BUF_READ(i->cs_buf)) {
+        if (BUF_READ(i->cs_buf)) {
             FD_SET(i->client, rfds);
         }
-        if ((i->state & STATE_SC) && BUF_READ(i->sc_buf)) {
+        if (BUF_READ(i->sc_buf)) {
             FD_SET(i->socks, rfds);
         }
         if (BUF_WRITE(i->cs_buf)) {
