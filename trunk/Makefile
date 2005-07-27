@@ -1,4 +1,4 @@
-# $Id: Makefile 45 2005-07-23 17:27:11Z matled $
+# $Id$
 TARGET=mtsp
 OBJECTS=buffer.o connection.o ewrite.o log.o options.o $(TARGET).o
 
@@ -35,7 +35,7 @@ endif
 .PHONY: clean all
 
 all: $(OBJECTS) $(TARGET) $(TARGET).stripped
-	ls -l mtsp mtsp.stripped
+	ls -l $(TARGET) $(TARGET).stripped
 
 %.o: %.c %.h config.h
 	$(CC) $(CFLAGS) -c $<
