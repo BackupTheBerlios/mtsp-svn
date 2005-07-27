@@ -46,7 +46,7 @@ size_t buf_appendv(struct buffer *buf, const struct iovec *vector, size_t count)
         len = vector[i].iov_len > BUF_SIZE - buf->len ?
             BUF_SIZE - buf->len : vector[i].iov_len;
         memcpy(buf->buf+buf->len, vector[i].iov_base, len);
-        buf->len += n;
+        buf->len += len;
         n += len;
     }
     return n;
