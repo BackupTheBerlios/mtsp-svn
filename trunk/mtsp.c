@@ -1,4 +1,4 @@
-/* $Id: mtsp.c 46 2005-07-23 17:30:22Z matled $ {{{
+/* $Id$ {{{
    vim:sw=4:sts=4:et:
    Copyright (C) 2005 Matthias Lederhofer <matled@gmx.net>
 
@@ -477,7 +477,7 @@ void setup_connection(int fd)
     iov[1].iov_len = strlen(global.options.username)+1;
 
     if (buf_appendv(&con->cs_buf, iov, 3) !=
-        (ssize_t)(iov[0].iov_len+iov[1].iov_len+iov[2].iov_len))
+        iov[0].iov_len+iov[1].iov_len+iov[2].iov_len)
     {
         logc_error(fd, "DROPPING connection: buffer failed (too small?)", NULL);
         connection_destroy(NULL, con);

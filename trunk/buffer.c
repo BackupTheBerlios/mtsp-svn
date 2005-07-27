@@ -1,4 +1,4 @@
-/* $Id: buffer.c 36 2005-07-22 09:26:47Z matled $ {{{
+/* $Id$ {{{
    vim:sw=4:sts=4:et:
    Copyright (C) 2005 Matthias Lederhofer <matled@gmx.net>
 
@@ -21,6 +21,7 @@
 #include <sys/uio.h>
 #include <sys/param.h>
 #include <unistd.h>
+#include <string.h>
 #include "config.h"
 #include "buffer.h"
 
@@ -30,25 +31,23 @@ void buf_init(struct buffer *buf)
     buf->pos = buf->buf;
 } /* }}} */
 
-ssize_t buf_append(struct buffer *buf, const char *read_buf, size_t len)
+size_t buf_append(struct buffer *buf, const char *read_buf, size_t len)
 /* {{{ */ {
-    ssize_t n = 0;
-    while (buf->len < BUF_SIZE && len--) {
-        buf->buf[buf->len++] = *(read_buf++);
-        ++n;
-    }
+    size_t n = len > BUF_SIZE - buf->len ? BUF_SIZE - buf->len : len;
+    memcpy(buf->buf+buf->len, read_buf, n);
+    buf->len += n;
     return n;
 } /* }}} */
 
-ssize_t buf_appendv(struct buffer *buf, const struct iovec *vector, size_t count)
+size_t buf_appendv(struct buffer *buf, const struct iovec *vector, size_t count)
 /* {{{ */ {
-    ssize_t n = 0;
-    size_t i, j;
+    size_t n = 0, i, len;
     for (i = 0; i < count; ++i) {
-        for (j = 0; j < vector[i].iov_len && buf->len < BUF_SIZE; ++j) {
-            buf->buf[buf->len++] = ((char*)vector[i].iov_base)[j];
-            ++n;
-        }
+        len = vector[i].iov_len > BUF_SIZE - buf->len ?
+            BUF_SIZE - buf->len : vector[i].iov_len;
+        memcpy(buf->buf+buf->len, vector[i].iov_base, len);
+        buf->len += n;
+        n += len;
     }
     return n;
 } /* }}} */

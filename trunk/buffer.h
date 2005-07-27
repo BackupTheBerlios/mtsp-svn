@@ -1,4 +1,4 @@
-/* $Id: buffer.h 36 2005-07-22 09:26:47Z matled $ {{{
+/* $Id$ {{{
    vim:sw=4:sts=4:et:
    Copyright (C) 2005 Matthias Lederhofer <matled@gmx.net>
 
@@ -37,8 +37,8 @@ struct buffer {
 };
 
 void buf_init(struct buffer *buf);
-ssize_t buf_append(struct buffer *buf, const char *read_buf, size_t len);
-ssize_t buf_appendv(struct buffer *buf, const struct iovec *vector, size_t count);
+size_t buf_append(struct buffer *buf, const char *read_buf, size_t len);
+size_t buf_appendv(struct buffer *buf, const struct iovec *vector, size_t count);
 ssize_t buf_read(int fd, struct buffer *buf, size_t len);
 ssize_t buf_write(int fd, struct buffer *buf, size_t len);
 
