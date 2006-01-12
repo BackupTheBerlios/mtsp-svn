@@ -1,4 +1,4 @@
-/* $Id: options.c 42 2005-07-23 17:20:29Z matled $ {{{
+/* $Id$ {{{
    vim:sw=4:sts=4:et:
    Copyright (C) 2005 Matthias Lederhofer <matled@gmx.net>
 
@@ -171,7 +171,6 @@ void parse_opt(int argc, char * const argv[], struct options_t *options)
         break;
     }
     }
-        (void)addr;
 
     if (error) {
         ewrite(STDERR_FILENO, "Try `", argv[0],
